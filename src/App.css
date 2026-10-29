@@ -1,0 +1,852 @@
+:root {
+  color-scheme: dark;
+  --bg: #0e1014;
+  --panel: #14171e;
+  --line: #232833;
+  --text: #e7eaf0;
+  --muted: #7b8494;
+  --accent: #4f7cff;
+}
+
+* { box-sizing: border-box; }
+
+html, body, #root { height: 100%; margin: 0; }
+
+body {
+  background: var(--bg);
+  color: var(--text);
+  font-family: "Inter", ui-sans-serif, system-ui, sans-serif;
+}
+
+.app {
+  height: 100%;
+  display: grid;
+  grid-template-rows: auto 1fr;
+}
+
+/* ---- top bar ---- */
+.topbar {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 1rem 1.5rem;
+  border-bottom: 1px solid var(--line);
+}
+
+.brand__eyebrow {
+  display: block;
+  font-size: 0.68rem;
+  letter-spacing: 0.22em;
+  text-transform: uppercase;
+  color: var(--muted);
+}
+
+.brand__title {
+  margin: 0.1rem 0 0;
+  font-size: 1.25rem;
+  font-weight: 650;
+  letter-spacing: -0.01em;
+}
+
+.source {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.5rem;
+  font-size: 0.8rem;
+  color: var(--muted);
+  font-family: ui-monospace, "SF Mono", monospace;
+}
+
+.dot {
+  width: 8px;
+  height: 8px;
+  border-radius: 50%;
+  background: var(--muted);
+}
+.dot--virtual { background: #ffb020; box-shadow: 0 0 10px #ffb02066; }
+
+/* ---- 3D stage (the hero) ---- */
+.stage {
+  display: grid;
+  /* Three real thirds: debug on the left, the cube in the middle, the algorithm sheets on the right.
+     Grid children default to min-width:auto, so the widest content (the toolbar, ~1200px) used to
+     force the middle column open and crush the other two down to a sliver. min-width:0 lets them
+     hold their share. */
+  grid-template-columns: 1fr 1fr 1fr;
+  grid-template-rows: 1fr;
+  min-height: 0;
+}
+.col-left, .col-mid, .cat-col { min-width: 0; }
+.col-mid {
+  grid-column: 2;
+  grid-row: 1;
+  position: relative;
+  min-height: 0;
+  display: flex;
+  flex-direction: column;
+}
+.canvas-wrap { flex: 1 1 auto; min-height: 0; position: relative; }
+.controls {
+  flex: 0 0 auto;
+  flex-wrap: wrap;         /* wrap instead of forcing the whole layout wider */
+  justify-content: center;
+  display: flex;
+  align-items: center;
+  gap: 0.9rem;
+  padding: 0.75rem 1rem;
+  border-top: 1px solid var(--line);
+}
+.col-left {
+  grid-column: 1;
+  grid-row: 1;
+  min-height: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 0.75rem;
+  padding: 1rem;
+  overflow-y: auto;
+  scrollbar-width: thin;
+}
+.side-readout { grid-column: 1; grid-row: 1; align-self: start; padding: 1rem; pointer-events: none; }
+.cat-col {
+  grid-column: 3;
+  grid-row: 1;
+  align-self: stretch;
+  min-height: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 0.35rem;
+  padding: 0.5rem 0.75rem;
+  overflow-y: auto;
+  scrollbar-width: thin;
+}
+.col-mid canvas { display: block; }
+
+.lastmove {
+  position: absolute;
+  top: 1.25rem;
+  left: 1.5rem;
+  font-family: ui-monospace, "SF Mono", monospace;
+  font-size: 3.5rem;
+  font-weight: 700;
+  line-height: 1;
+  color: var(--text);
+  text-shadow: 0 2px 24px rgba(0, 0, 0, 0.6);
+  pointer-events: none;
+  font-variant-numeric: tabular-nums;
+}
+
+/* ---- bottom dock ---- */
+.dock {
+  display: flex;
+  align-items: center;
+  gap: 1.5rem;
+  padding: 0.9rem 1.5rem;
+  border-top: 1px solid var(--line);
+  background: var(--panel);
+}
+
+.dock__left {
+  display: inline-flex;
+  align-items: center;
+  gap: 1rem;
+  flex-shrink: 0;
+}
+
+.btn {
+  font: inherit;
+  font-size: 0.85rem;
+  padding: 0.45rem 0.9rem;
+  border: 1px solid var(--line);
+  border-radius: 8px;
+  background: transparent;
+  color: var(--text);
+  cursor: pointer;
+  transition: border-color 0.15s, background 0.15s;
+}
+.btn:hover:not(:disabled) { border-color: var(--accent); background: #171b24; }
+.btn:disabled { opacity: 0.4; cursor: default; }
+.btn:focus-visible { outline: 2px solid var(--accent); outline-offset: 2px; }
+
+.count {
+  font-size: 0.78rem;
+  color: var(--muted);
+  font-family: ui-monospace, monospace;
+  white-space: nowrap;
+}
+
+.log {
+  flex: 1;
+  min-width: 0;
+  font-family: ui-monospace, "SF Mono", monospace;
+  font-size: 0.95rem;
+  letter-spacing: 0.04em;
+  color: #b9c1d0;
+  white-space: nowrap;
+  overflow-x: auto;
+  text-align: right;
+  scrollbar-width: thin;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  * { scroll-behavior: auto; }
+}
+
+.cell-readout {
+  position: absolute;
+  top: 1.4rem;
+  right: 1.5rem;
+  font-family: ui-monospace, "SF Mono", monospace;
+  font-size: 0.9rem;
+  color: #9fb0c8;
+  background: rgba(20, 23, 30, 0.7);
+  border: 1px solid var(--line);
+  border-radius: 8px;
+  padding: 0.35rem 0.7rem;
+  pointer-events: none;
+}
+.cell-readout b { color: #e7eaf0; }
+
+.trace-readout {
+  position: absolute;
+  top: 3.6rem;
+  right: 1.5rem;
+  font-family: ui-monospace, "SF Mono", monospace;
+  font-size: 0.8rem;
+  color: #ffd479;
+  background: rgba(20, 23, 30, 0.9);
+  border: 1px solid #3a3320;
+  border-radius: 8px;
+  padding: 0.5rem 0.7rem;
+  pointer-events: none;
+  max-width: 420px;
+}
+.trace-readout__head { font-size: 1rem; color: #fff; margin-bottom: 0.35rem; }
+.trace-readout__row { color: #cdb886; line-height: 1.5; white-space: nowrap; }
+.trace-readout__row b { color: #fff; }
+
+/* move buttons in the top bar */
+.buttons {
+  display: flex;
+  gap: 0.35rem;
+  flex-wrap: wrap;
+  justify-content: center;
+}
+.movebtn {
+  font-family: ui-monospace, "SF Mono", monospace;
+  font-size: 0.9rem;
+  font-weight: 600;
+  min-width: 2.4rem;
+  padding: 0.4rem 0.5rem;
+  border: 1px solid var(--line);
+  border-radius: 7px;
+  background: #171b24;
+  color: var(--text);
+  cursor: pointer;
+  transition: border-color 0.12s, background 0.12s, transform 0.05s;
+}
+.movebtn:hover { border-color: var(--accent); background: #1c2130; }
+.movebtn:active { transform: translateY(1px); background: #222838; }
+.movebtn:focus-visible { outline: 2px solid var(--accent); outline-offset: 2px; }
+
+/* accent button + cross panel */
+.btn--accent {
+  border-color: var(--accent);
+  background: #1a2340;
+  color: #cdd8ff;
+}
+.btn--accent:hover:not(:disabled) { background: #21306a; border-color: #6f8cff; }
+
+.cross-panel {
+  background: rgba(16, 20, 32, 0.92);
+  border: 1px solid #2b3350;
+  border-radius: 12px;
+  padding: 0.85rem 1.1rem;
+}
+.cross-panel__label {
+  font-size: 0.65rem;
+  letter-spacing: 0.16em;
+  text-transform: uppercase;
+  color: #7f8aa8;
+  margin-bottom: 0.4rem;
+}
+.cross-panel__moves {
+  font-family: ui-monospace, "SF Mono", monospace;
+  font-size: 1.7rem;
+  font-weight: 700;
+  color: #eaf0ff;
+  letter-spacing: 0.05em;
+}
+.cross-panel__count { font-size: 0.8rem; color: #7f8aa8; margin-top: 0.25rem; }
+.cross-panel__done { font-size: 1.2rem; color: #6ee7a8; font-weight: 600; }
+
+.cross-panel__line { display: flex; align-items: baseline; gap: 0.6rem; margin: 0.2rem 0; }
+.cross-panel__tag {
+  font-size: 0.6rem; text-transform: uppercase; letter-spacing: 0.12em;
+  color: #7f8aa8; width: 3rem; flex-shrink: 0;
+}
+.cross-panel__rot {
+  font-family: ui-monospace, monospace; font-size: 1.1rem; font-weight: 600; color: #ffd479;
+}
+
+/* guided cross sequence */
+.cross-panel__seq { display: flex; flex-wrap: wrap; gap: 0.4rem; margin-top: 0.5rem; max-width: 320px; }
+.mv {
+  font-family: ui-monospace, "SF Mono", monospace;
+  font-size: 1rem; font-weight: 600;
+  padding: 0.2rem 0.5rem; border-radius: 6px;
+  border: 1px solid transparent;
+  background: #20242e; color: #8b93a5;
+  cursor: pointer;
+  transition: background 0.12s, transform 0.05s, border-color 0.12s;
+}
+.mv:hover { background: #2a2f3c; border-color: var(--accent); color: #e7eaf0; }
+.mv:active { transform: translateY(1px); }
+.mv:focus-visible { outline: 2px solid var(--accent); outline-offset: 2px; }
+.mv--next {
+  background: #ffb020; color: #1a1206; border-color: #ffb020;
+  box-shadow: 0 0 16px #ffb02066;
+  transform: scale(1.08);
+}
+.mv--next:hover { background: #ffc24a; color: #1a1206; border-color: #ffc24a; }
+
+/* CFOP phase indicator */
+.phases { display: flex; gap: 0.35rem; margin-left: 0.5rem; }
+.phase {
+  width: 1.9rem; height: 1.9rem; border-radius: 8px;
+  display: flex; align-items: center; justify-content: center;
+  font-weight: 700; font-size: 0.9rem;
+  background: #191d27; color: #5b6478; border: 1px solid #262c3a;
+}
+.phase--active { background: #21306a; color: #cdd8ff; border-color: var(--accent); box-shadow: 0 0 12px #4c6bff44; }
+.phase--done { background: #123122; color: #6ee7a8; border-color: #1f6b45; }
+
+/* F2L variant rows */
+.variants { display: flex; flex-direction: column; gap: 0.35rem; margin-top: 0.5rem; max-width: 360px; }
+.variant-row { display: flex; flex-wrap: wrap; gap: 0.3rem; align-items: center; }
+.mv--done { opacity: 0.4; text-decoration: line-through; cursor: default; }
+.mv:disabled:not(.mv--next) { cursor: default; opacity: 0.5; }
+
+/* ---- phase-grouped move history (its own row; never grows horizontally) ---- */
+.history {
+  display: flex;
+  flex-direction: column;
+  gap: 0.5rem;
+  align-items: flex-start;
+  padding: 0.25rem 0;
+}
+.hist-group {
+  display: flex;
+  flex-direction: column;
+  gap: 0.15rem;
+  max-width: 100%;
+  margin-bottom: 0.5rem;
+}
+.hist-label {
+  font-weight: 700;
+  font-size: 0.62rem;
+  text-transform: uppercase;
+  letter-spacing: 0.08em;
+  align-self: flex-start;
+  padding: 0.1rem 0.5rem;
+  border-radius: 5px;
+}
+.hist-C .hist-label { background: #123a4a; color: #7fd6ff; }
+.hist-F .hist-label { background: #1a2340; color: #9fb2ff; }
+.hist-O .hist-label { background: #4a3a12; color: #ffd479; }
+.hist-P .hist-label { background: #123122; color: #6ee7a8; }
+.hist-auf .hist-label { background: #3a2f12; color: #c8a24f; font-style: italic; }
+.hist-moves {
+  font-family: ui-monospace, "SF Mono", monospace;
+  font-size: 0.9rem;
+  letter-spacing: 0.03em;
+  color: #b9c1d0;
+  word-spacing: 0.15em;
+  overflow-wrap: anywhere;
+}
+.hist-hint { font-size: 0.8rem; color: var(--muted); }
+
+/* 2-slot (affects another slot) badge on a variant */
+.slot-badge {
+  font-size: 0.62rem;
+  font-weight: 700;
+  letter-spacing: 0.04em;
+  color: #ff8fc4;
+  background: #3a1730;
+  border: 1px solid #7a2b57;
+  border-radius: 5px;
+  padding: 0.08rem 0.35rem;
+  margin-left: 0.15rem;
+  white-space: nowrap;
+}
+
+/* F2L category reference panel (right column, next to the twin) */
+.cat-panel__title {
+  flex: 0 0 auto;
+  font-size: 0.78rem;
+  font-weight: 600;
+  color: var(--muted);
+  letter-spacing: 0.01em;
+  text-align: center;
+}
+.cat-panel__img {
+  flex: 0 0 auto;
+  width: 100%;
+  height: auto;
+  display: block;
+  border-radius: 6px;
+  background: #fff;
+  padding: 0.4rem;
+  cursor: zoom-in;
+}
+/* Click to blow the sheet up over the whole window when the print is still too small to read. */
+.cat-zoom {
+  position: fixed;
+  inset: 0;
+  z-index: 60;
+  background: rgba(6, 9, 16, 0.92);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 2rem;
+  cursor: zoom-out;
+}
+.cat-zoom img {
+  max-width: 96vw;
+  max-height: 92vh;
+  border-radius: 8px;
+  background: #fff;
+  padding: 0.5rem;
+}
+
+/* Paint (input cube) panel */
+.paint-panel { background: rgba(16,20,32,0.92); border: 1px solid #2b3350; border-radius: 12px; padding: 0.9rem 1rem; }
+.paint-panel__title { font-weight: 700; color: var(--text); margin-bottom: 0.4rem; }
+.paint-panel__hint { font-size: 0.78rem; color: var(--muted); line-height: 1.4; margin-bottom: 0.7rem; }
+.palette { display: grid; grid-template-columns: repeat(3, 1fr); gap: 0.5rem; }
+.swatch {
+  aspect-ratio: 1; border-radius: 8px; border: 2px solid #2b3350; cursor: pointer;
+  display: flex; align-items: flex-end; justify-content: center; padding: 0.25rem;
+  position: relative; transition: transform 0.1s, border-color 0.1s;
+}
+.swatch--on { border-color: #fff; transform: scale(1.06); box-shadow: 0 0 10px #ffffff55; }
+.swatch__count { font-size: 0.7rem; font-weight: 700; color: #000; background: rgba(255,255,255,0.75); border-radius: 4px; padding: 0 0.25rem; }
+.paint-panel__msg { margin-top: 0.7rem; font-size: 0.82rem; color: #ffd479; }
+.paint-panel__actions { display: flex; gap: 0.6rem; margin-top: 0.8rem; }
+
+/* Physical cube connection */
+.btn--live { border-color: #1f6b45; color: #6ee7a8; background: #123122; }
+.btn--live:hover { background: #163d29; }
+.conn-error { font-size: 0.72rem; color: #ff9a9a; max-width: 22ch; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+
+/* Live gyro quaternion debug readout */
+.gyro-readout {
+  position: absolute;
+  top: 0.75rem;
+  left: 50%;
+  transform: translateX(-50%);
+  font-family: ui-monospace, monospace;
+  font-size: 0.8rem;
+  color: #9fd0ff;
+  background: rgba(10, 14, 22, 0.85);
+  border: 1px solid #2b3350;
+  border-radius: 8px;
+  padding: 0.3rem 0.7rem;
+  white-space: nowrap;
+  pointer-events: none;
+}
+
+/* Cube-rotation token in guidance: shown for J Perm consistency, auto-completed */
+.mv--rot {
+  opacity: 0.55;
+  font-style: italic;
+  background: transparent;
+  border: 1px dashed #3a4560;
+  cursor: default;
+}
+.mv--rot.mv--next { opacity: 0.85; border-color: var(--accent); color: #cdd8ff; }
+
+/* Pure J Perm algorithm text (left panel) */
+.alg-text {
+  font-family: ui-monospace, "SF Mono", Menlo, monospace;
+  font-size: 0.92rem;
+  color: var(--text);
+  letter-spacing: 0.01em;
+  line-height: 1.5;
+}
+
+/* Debug console (left column) */
+.debug-console {
+  margin: 0.6rem 0;
+  padding: 0.6rem 0.7rem;
+  border: 1px solid #35406a;
+  border-radius: 8px;
+  background: rgba(12, 16, 28, 0.9);
+  font-family: ui-monospace, monospace;
+  font-size: 0.72rem;
+  line-height: 1.5;
+  color: #9fb3d0;
+}
+.debug-title { color: #6ee7a8; font-weight: 700; text-transform: uppercase; letter-spacing: 0.08em; margin-bottom: 0.3rem; }
+.debug-var { margin-top: 0.35rem; border-top: 1px dashed #2b3350; padding-top: 0.3rem; }
+.debug-str { color: #e8eefc; }
+.debug-abs { color: #7f93b3; margin-top: 0.15rem; }
+.debug-cur { background: var(--accent, #4060ff); color: #fff; border-radius: 3px; padding: 0 2px; }
+.debug-past { color: #4a5a78; text-decoration: line-through; }
+.debug-hist { margin-top: 0.4rem; color: #c98; }
+
+.debug-raw { color: #5a6a88; font-size: 0.66rem; }
+
+/* Extra move buttons (slices, wides, rotations) for testing/mapping */
+.buttons--extra { margin-top: 0.35rem; flex-wrap: wrap; gap: 0.3rem; opacity: 0.9; }
+.movebtn--extra { font-size: 0.8rem; padding: 0.28rem 0.5rem; color: #9fd0ff; border-color: #2b3a5c; }
+.movebtn--extra:hover { background: #16233d; }
+
+.debug-clear {
+  margin-left: 0.5rem; font-size: 0.62rem; padding: 1px 6px;
+  background: #2a1c1c; color: #ff9a9a; border: 1px solid #5a2b2b; border-radius: 4px; cursor: pointer;
+  text-transform: none; letter-spacing: 0;
+}
+.debug-clear:hover { background: #3a2020; }
+
+/* Past / present / future move HUD (guided solving) */
+.hud-ppf {
+  position: absolute; top: 1.2rem; left: 50%; transform: translateX(-50%);
+  display: flex; gap: 0.5rem; align-items: stretch; z-index: 5;
+  /* The HUD floats over the canvas and must let drags through to the cube — EXCEPT the NOW cell,
+     which you can click to play the move. So the layer is transparent to the pointer and that one
+     cell opts back in. */
+  pointer-events: none;
+}
+.hud-clickable { pointer-events: auto; }
+.hud-cell {
+  display: flex; flex-direction: column; align-items: center; justify-content: center;
+  min-width: 4.2rem; padding: 0.35rem 0.7rem; border-radius: 10px;
+  background: rgba(14, 18, 30, 0.72); border: 1px solid #2a3350; backdrop-filter: blur(4px);
+}
+.hud-label { font-size: 0.6rem; text-transform: uppercase; letter-spacing: 0.12em; color: #8aa0c4; }
+.hud-move { font-family: ui-monospace, monospace; font-weight: 700; line-height: 1; }
+.hud-past .hud-move { font-size: 1.5rem; color: #6a7ca0; }
+.hud-present { border-color: var(--accent, #4060ff); background: rgba(30, 44, 90, 0.8); }
+.hud-present .hud-move { font-size: 2.6rem; color: #ffffff; }
+.hud-future .hud-move { font-size: 1.5rem; color: #6a7ca0; }
+
+/* Test bench — algorithm catalog for verifying guidance behavior */
+.testbench {
+  position: absolute; bottom: 4.2rem; left: 1rem; right: 1rem; z-index: 30;
+  max-height: 60vh; overflow-y: auto;
+  background: rgba(12, 16, 26, 0.97); border: 1px solid #2a3350; border-radius: 12px;
+  padding: 0.8rem 1rem; backdrop-filter: blur(8px);
+}
+.testbench-head {
+  display: flex; justify-content: space-between; align-items: center;
+  font-size: 0.8rem; color: #9fb2ff; margin-bottom: 0.7rem;
+}
+.testbench-cols { display: grid; grid-template-columns: repeat(3, 1fr); gap: 1rem; }
+.testbench-col h4 {
+  margin: 0 0 0.4rem; font-size: 0.72rem; text-transform: uppercase; letter-spacing: 0.1em;
+  color: #7fd6ff;
+}
+.tb-alg {
+  display: flex; flex-direction: column; align-items: flex-start; gap: 0.1rem;
+  width: 100%; text-align: left; padding: 0.35rem 0.55rem; margin-bottom: 0.3rem;
+  background: rgba(26, 35, 64, 0.6); border: 1px solid #2a3350; border-radius: 7px;
+  cursor: pointer; color: #e8ecf4;
+}
+.tb-alg:hover { background: rgba(40, 60, 120, 0.6); border-color: var(--accent, #4060ff); }
+.tb-label { font-size: 0.7rem; font-weight: 600; color: #b9c1d0; }
+.tb-str { font-family: ui-monospace, monospace; font-size: 0.82rem; color: #ffffff; }
+
+/* Test bench progress badge */
+.test-badge {
+  position: absolute; top: 0.2rem; left: 50%; transform: translateX(-50%);
+  z-index: 6; font-size: 0.66rem; font-weight: 700; letter-spacing: 0.08em;
+  text-transform: uppercase; color: #ffd479;
+  background: rgba(74, 58, 18, 0.7); border: 1px solid #6a5412;
+  padding: 0.15rem 0.6rem; border-radius: 6px; white-space: nowrap;
+}
+
+/* Guide-solve progress panel above the cube */
+.guide-progress {
+  flex: 0 0 auto; display: flex; flex-direction: column; align-items: center; gap: 0.35rem;
+  padding: 0.4rem 0.5rem 0.5rem; border-bottom: 1px solid #1c2230;
+}
+.gp-stages { display: flex; flex-wrap: wrap; justify-content: center; gap: 0.25rem; }
+.gp-stage {
+  font-size: 0.7rem; padding: 0.1rem 0.5rem; border-radius: 999px;
+  background: rgba(28, 34, 46, 0.75); color: #7a8699; border: 1px solid transparent; white-space: nowrap;
+}
+.gp-stage.gp-done { color: #4fd18b; }
+.gp-stage.gp-current {
+  background: rgba(79, 130, 255, 0.22); color: #cfe0ff; border-color: #4f82ff; font-weight: 700;
+}
+.gp-detail { display: flex; flex-direction: column; align-items: center; gap: 0.1rem; }
+.gp-case { font-size: 0.8rem; color: #cfe0ff; }
+.gp-case b { color: #ffd479; font-weight: 700; }
+.gp-auf { font-size: 0.78rem; color: #7a8699; letter-spacing: 0.02em; }
+.gp-aufchip { color: #c8a24f; }
+.gp-alg {
+  font-family: ui-monospace, monospace; font-size: 0.98rem; color: #9aa7bd; font-weight: 700;
+  background: rgba(14, 16, 20, 0.6); padding: 0.1rem 0.5rem; border-radius: 6px;
+}
+.gp-step-active { color: #ffffff; }
+/* The letter you are on right now — so you can read the algorithm and still know where you are. */
+.gp-alg .gp-now {
+  color: #ffffff;
+  background: #4f82ff;
+  border-radius: 4px;
+  padding: 0 0.22rem;
+  animation: gp-pulse 1s ease-in-out infinite;
+}
+.gp-alg .gp-past { color: #5a6a88; }
+@keyframes gp-pulse {
+  0%, 100% { box-shadow: 0 0 0 0 rgba(79, 130, 255, 0.55); }
+  50%      { box-shadow: 0 0 0 6px rgba(79, 130, 255, 0); }
+}
+.gp-auf.gp-step-active { color: #ffd479; font-weight: 700; }
+.gp-alg.gp-step-active { color: #ffffff; box-shadow: 0 0 0 1px #4f82ff inset; }
+
+/* Test bench — dedicated repetition history */
+.test-history { display: flex; flex-direction: column; gap: 0.4rem; }
+.test-alg {
+  display: flex; flex-direction: column; gap: 0.1rem; padding-bottom: 0.4rem;
+  border-bottom: 1px solid #2a3350; margin-bottom: 0.2rem;
+}
+.test-alg-label { font-size: 0.7rem; font-weight: 700; text-transform: uppercase; letter-spacing: 0.08em; color: #ffd479; }
+.test-alg-str { font-family: ui-monospace, monospace; font-size: 0.9rem; color: #ffffff; }
+.test-rep { display: flex; align-items: baseline; gap: 0.5rem; }
+.test-rep-label {
+  flex-shrink: 0; min-width: 3.4rem; font-size: 0.64rem; font-weight: 700;
+  text-transform: uppercase; letter-spacing: 0.05em; padding: 0.1rem 0.4rem; border-radius: 5px;
+  background: rgba(26, 35, 64, 0.7); color: #9fb2ff;
+}
+.test-rep--undo .test-rep-label { background: rgba(74, 30, 30, 0.7); color: #ff9a9a; }
+.test-rep-moves { font-family: ui-monospace, monospace; font-size: 0.85rem; color: #ffffff; display: flex; flex-wrap: wrap; column-gap: 0.3rem; align-items: baseline; }
+.test-done { margin-top: 0.3rem; font-size: 0.85rem; font-weight: 700; color: #6ee7a8; }
+
+/* Test bench: deviation moves + fix HUD state */
+.tb-dev { color: #ff7a7a; font-weight: 700; }
+.tb-fix { color: #4fd18b; font-weight: 700; }
+.tb-alg { color: #ffffff; font-weight: 700; }
+.hud-fix { border-color: #4fd18b !important; background: rgba(18, 58, 40, 0.85) !important; }
+.hud-fix .hud-label { color: #6ee7a8 !important; }
+.hud-fix .hud-move { color: #b6ffcf !important; }
+
+
+/* A screen of its own for the algorithm sheets — they are dense, and squeezing them into a side
+   column made them unreadable. Here they get the whole window. */
+.sheet-screen {
+  position: fixed;
+  inset: 0;
+  z-index: 70;
+  background: #0b0e16;
+  display: flex;
+  flex-direction: column;
+}
+.sheet-screen__bar {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 1rem;
+  padding: 0.7rem 1rem;
+  border-bottom: 1px solid var(--line);
+}
+.sheet-screen__tabs { display: flex; align-items: center; gap: 0.5rem; }
+.sheet-screen__now { color: #7ce0ff; font-weight: 700; margin-left: 0.6rem; }
+.sheet-screen__body {
+  flex: 1 1 auto;
+  min-height: 0;
+  overflow: auto;
+  display: flex;
+  align-items: flex-start;
+  justify-content: center;
+  padding: 1rem;
+}
+.sheet-screen__body img {
+  width: auto;
+  max-width: none;      /* let it be as big as it needs to be — scroll to read */
+  height: auto;
+  min-width: 90vw;      /* fill the width, so the print is actually legible */
+  background: #fff;
+  border-radius: 8px;
+  padding: 0.6rem;
+}
+.sheet-screen__empty { color: var(--muted); padding: 3rem; }
+
+
+/* Left column: pick what the third is for — the console, or the buttons that drive the virtual cube
+   (for practising while the real one is charging). */
+.lefttabs { display: flex; gap: 0.5rem; margin-bottom: 0.25rem; }
+.keys-panel {
+  background: rgba(16, 20, 32, 0.92);
+  border: 1px solid #2b3350;
+  border-radius: 12px;
+  padding: 0.8rem;
+  display: flex;
+  flex-direction: column;
+  gap: 0.55rem;
+}
+.keys-panel__hint { color: var(--muted); font-size: 0.78rem; margin-bottom: 0.2rem; }
+.keys-row { display: flex; align-items: center; gap: 0.5rem; }
+.keys-row__label {
+  flex: 0 0 4.6rem;
+  color: var(--muted);
+  font-size: 0.72rem;
+  letter-spacing: 0.02em;
+}
+.keys-row__btns { display: flex; flex-wrap: wrap; gap: 0.32rem; }
+.keys-row__btns .movebtn { min-width: 2.2rem; padding: 0.32rem 0.42rem; font-size: 0.85rem; }
+
+
+/* Welcome: the app is really two apps — one where your hands drive a real cube, one where the
+   buttons drive a virtual one. Ask once, then show only the tools that mode actually needs. */
+.welcome {
+  position: fixed;
+  inset: 0;
+  z-index: 90;
+  background: radial-gradient(1200px 600px at 50% 0%, #16203a 0%, #080b12 70%);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 2rem;
+}
+.welcome__card { max-width: 940px; width: 100%; text-align: center; }
+.welcome__card h2 { font-size: 2.1rem; margin: 0 0 0.35rem; letter-spacing: -0.01em; }
+.welcome__sub { color: var(--muted); margin: 0 0 2rem; }
+.welcome__opts { display: grid; grid-template-columns: 1fr 1fr; gap: 1rem; }
+.welcome__opt {
+  text-align: left;
+  padding: 1.4rem 1.5rem;
+  border-radius: 14px;
+  border: 1px solid #2b3350;
+  background: rgba(16, 20, 32, 0.9);
+  color: var(--text);
+  cursor: pointer;
+  display: flex;
+  flex-direction: column;
+  gap: 0.5rem;
+  transition: border-color 0.15s, transform 0.15s;
+}
+.welcome__opt:hover { border-color: #4f82ff; transform: translateY(-2px); }
+.welcome__opt--primary { border-color: #4f82ff88; background: rgba(28, 44, 84, 0.75); }
+.welcome__opt-title { font-size: 1.15rem; font-weight: 700; }
+.welcome__opt-desc { color: var(--muted); font-size: 0.88rem; line-height: 1.5; }
+.welcome__err { color: #ff8a8a; margin-top: 1rem; font-size: 0.85rem; }
+@media (max-width: 760px) { .welcome__opts { grid-template-columns: 1fr; } }
+
+/* Whole-cube rotations, grouped tight next to Reset — the tool for realigning the model with how
+   the cube actually sits in your hands. */
+.align-group {
+  display: inline-flex;
+  gap: 0.25rem;
+  padding: 0.2rem 0.35rem;
+  border: 1px solid var(--line);
+  border-radius: 10px;
+}
+.align-group .movebtn { min-width: 2rem; padding: 0.3rem 0.4rem; font-size: 0.82rem; }
+
+
+/* Realigning the model with the cube in your hands: a rotation, not a camera move. */
+.align-group {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.28rem;
+  padding: 0.25rem 0.5rem;
+  border: 1px solid #2b3350;
+  border-radius: 10px;
+  background: rgba(16, 20, 32, 0.7);
+}
+.align-group__label { color: var(--muted); font-size: 0.72rem; margin-right: 0.15rem; }
+.movebtn--align { min-width: 2rem; padding: 0.28rem 0.4rem; font-size: 0.85rem; }
+
+
+/* The NOW cell can play its own move (virtual mode only) — a quick way to skip ahead to the phase
+   you actually want to drill. */
+.hud-clickable { cursor: pointer; transition: transform 0.1s, box-shadow 0.15s; }
+.hud-clickable:hover { transform: translateY(-2px); box-shadow: 0 0 0 2px #4f82ff88; }
+.hud-clickable:active { transform: translateY(0); }
+
+
+/* Stage chips: click to fast-forward the solve to that phase (virtual mode) — so you can get to the
+   OLL or PLL you actually want to drill without turning the whole cube by hand. */
+.gp-stage.gp-jump { cursor: pointer; }
+.gp-stage.gp-jump:hover { border-color: #4f82ff; color: #e8edf5; }
+
+
+/* An extraction — freeing a piece that is stuck in the wrong slot — is its own step, and deserves to
+   look like one instead of being mistaken for part of the pair's algorithm. */
+.hist-X .hist-label { background: #4a3a6b; color: #d9c8ff; }
+
+
+/* The algorithm read as gestures — shown alongside the letters, never instead of them. The letters
+   are the algorithm; the gestures are how you will actually hold it in your head. */
+.gp-gestures {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  justify-content: center;
+  gap: 0.35rem;
+  margin-top: 0.4rem;
+}
+.gp-gest {
+  display: inline-flex;
+  flex-direction: column;
+  align-items: center;
+  padding: 0.2rem 0.5rem;
+  border: 1px solid #3a4a72;
+  border-radius: 8px;
+  background: rgba(30, 40, 70, 0.6);
+}
+.gp-gest-name { font-size: 0.62rem; color: #7ce0ff; letter-spacing: 0.02em; }
+.gp-gest-toks { font-family: ui-monospace, monospace; font-size: 0.82rem; color: #e8edf5; }
+.gp-loose {
+  font-family: ui-monospace, monospace;
+  font-size: 0.82rem;
+  color: #7a8699;
+  padding: 0 0.15rem;
+}
+
+
+/* Solve timer — a clock and a move count, nothing else. */
+.solve-timer {
+  position: absolute;
+  top: 1.2rem;
+  left: 1.2rem;
+  z-index: 6;
+  padding: 0.7rem 1rem;
+  border-radius: 12px;
+  border: 1px solid #2b3350;
+  background: rgba(10, 14, 24, 0.88);
+  pointer-events: none;
+  min-width: 11rem;
+}
+.solve-timer__time {
+  font-family: ui-monospace, monospace;
+  font-size: 2.1rem;
+  font-weight: 700;
+  letter-spacing: -0.02em;
+  color: #e8edf5;
+  line-height: 1.1;
+}
+.solve-timer__time--done { color: #4fd18b; }
+.solve-timer__sub { color: var(--muted); font-size: 0.76rem; margin-top: 0.2rem; }
+.solve-timer__wait { color: #7ce0ff; font-size: 0.8rem; max-width: 12rem; line-height: 1.4; }
+
+
+/* The recognition cue — what you would look for if the app were not telling you. */
+.gp-cue {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.45rem;
+  margin: 0.25rem 0 0.1rem;
+  padding: 0.18rem 0.55rem;
+  border: 1px solid #4a5a3a;
+  border-radius: 999px;
+  background: rgba(40, 56, 32, 0.55);
+}
+.gp-cue-label { font-size: 0.62rem; color: #9fc27a; letter-spacing: 0.04em; text-transform: uppercase; }
+.gp-cue-text { font-size: 0.85rem; color: #d7f0bd; }
+
+.gp-why { border-color: #3a4a72; background: rgba(30, 40, 70, 0.55); }
+.gp-why .gp-cue-label { color: #7ce0ff; }
+.gp-why .gp-cue-text { color: #cfe3ff; }

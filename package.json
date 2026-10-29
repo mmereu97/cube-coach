@@ -1,0 +1,47 @@
+{
+  "name": "cube-coach",
+  "private": true,
+  "version": "0.1.0",
+  "description": "A browser-based CFOP coach and digital twin for the Rubik's Cube, driven by a GAN 356 i3 smart cube over Web Bluetooth. Guides your own scramble move by move with J Perm algorithms, and classifies faces/wides/slices from gyroscope data.",
+  "type": "module",
+  "keywords": [
+    "rubiks-cube",
+    "cfop",
+    "fridrich",
+    "speedcubing",
+    "three.js",
+    "react",
+    "web-bluetooth",
+    "gan-cube",
+    "digital-twin",
+    "gyroscope",
+    "sensor-fusion"
+  ],
+  "license": "MIT",
+  "author": "Mihai Mereu",
+  "scripts": {
+    "dev": "vite",
+    "build": "tsc && vite build",
+    "preview": "vite preview",
+    "test": "vitest run",
+    "test:watch": "vitest"
+  },
+  "dependencies": {
+    "@react-three/drei": "^9.122.0",
+    "@react-three/fiber": "^8.18.0",
+    "gan-web-bluetooth": "3.0.2",
+    "react": "^18.3.1",
+    "react-dom": "^18.3.1",
+    "three": "^0.160.1"
+  },
+  "devDependencies": {
+    "@types/react": "^18.3.12",
+    "@types/react-dom": "^18.3.1",
+    "@types/three": "^0.160.0",
+    "@types/web-bluetooth": "^0.0.20",
+    "@vitejs/plugin-react": "^4.3.4",
+    "typescript": "^5.6.3",
+    "vite": "^5.4.11",
+    "vitest": "^4.1.10"
+  }
+}
