@@ -11,6 +11,8 @@ what to look for.
 It also runs entirely without a smart cube, driven by buttons and the keyboard, so
 you can practise while the real one is charging.
 
+![Cube Coach: 3D digital twin of the cube with move-by-move CFOP guidance](docs/screenshot.png)
+
 > Status: active personal project. The CFOP engine, both input modes, the guided
 > solve, the test bench, and the sensor-based move classifier are working and
 > tested against real hardware.
